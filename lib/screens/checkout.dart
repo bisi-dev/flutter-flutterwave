@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutterwave_standard/flutterwave.dart';
 
@@ -10,8 +11,7 @@ class CheckOutPage extends StatefulWidget {
 }
 
 class _CheckOutPageState extends State<CheckOutPage> {
-
-  void _loadDotEnv () async{
+  void _loadDotEnv() async {
     await dotenv.load(fileName: ".env");
   }
 
@@ -19,6 +19,67 @@ class _CheckOutPageState extends State<CheckOutPage> {
   void initState() {
     super.initState();
     _loadDotEnv();
+  }
+
+  final snackBarSuccess = SnackBar(
+    content: Text('Payment Successful, Thanks for your patronage !'),
+  );
+
+  final snackBarFailure = SnackBar(
+    content: Text('Payment Unsuccessful, Please Try Again.'),
+  );
+
+  final String amount = "1000";
+  final String txRef = "unique_transaction_ref_${Random().nextInt(1000000)}";
+
+  void _makePayment() async {
+    final style = FlutterwaveStyle(
+        appBarText: "Pay with Flutterwave",
+        buttonColor: Colors.orangeAccent,
+        appBarIcon: Icon(Icons.payment_rounded, color: Colors.black),
+        buttonTextStyle: TextStyle(
+          color: Colors.black,
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
+        ),
+        appBarColor: Colors.orange,
+        dialogCancelTextStyle: TextStyle(
+          color: Colors.redAccent,
+          fontSize: 18,
+        ),
+        dialogContinueTextStyle: TextStyle(
+          color: Colors.blue,
+          fontSize: 18,
+        ));
+
+    final Customer customer = Customer(
+        name: "FLW Customer",
+        phoneNumber: "12345678910",
+        email: "flwcustomer@qa.team");
+
+    final Flutterwave flutterwave = Flutterwave(
+        context: context,
+        style: style,
+        publicKey: dotenv.env['PUBLIC_KEY']!,
+        currency: "NGN",
+        txRef: txRef,
+        amount: amount,
+        customer: customer,
+        paymentOptions: "ussd, card, barter, payattitude",
+        customization: Customization(title: "Test Payment"),
+        isTestMode: true);
+
+    final ChargeResponse response = await flutterwave.charge();
+    if (response != null) {
+      print(response.toJson());
+      if (response.success! && response.txRef == txRef) {
+        ScaffoldMessenger.of(context).showSnackBar(snackBarSuccess);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(snackBarFailure);
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(snackBarFailure);
+    }
   }
 
   @override
@@ -34,7 +95,23 @@ class _CheckOutPageState extends State<CheckOutPage> {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          CheckOutSummary(),
           CheckOutCard(),
+        ],
+      ),
+    );
+  }
+
+  Widget CheckOutSummary() {
+    return Padding(
+      padding: const EdgeInsets.all(22.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Text(
+            'Total: ₦ $amount',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
         ],
       ),
     );
@@ -55,7 +132,7 @@ class _CheckOutPageState extends State<CheckOutPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
                 Text(
-                  "Pay with Flutter",
+                  "Pay with Flutterwave",
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 Icon(
