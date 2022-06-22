@@ -10,6 +10,17 @@ class CheckOutPage extends StatefulWidget {
 }
 
 class _CheckOutPageState extends State<CheckOutPage> {
+
+  void _loadDotEnv () async{
+    await dotenv.load(fileName: ".env");
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDotEnv();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
